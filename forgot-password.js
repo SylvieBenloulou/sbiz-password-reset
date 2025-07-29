@@ -1,10 +1,12 @@
-
 const { createClient } = require('@supabase/supabase-js');
 const { Resend } = require('resend');
 const { v4: uuidv4 } = require('uuid');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -16,6 +18,7 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: 'Email is required' };
   }
 
+  // בדיקה אם המשתמש קיים בטבלה
   const { data: user, error: userError } = await supabase
     .from('custom_users')
     .select('id')
@@ -29,6 +32,7 @@ exports.handler = async (event) => {
   const token = uuidv4();
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
+  // עדכון הטבלה עם הטוקן ותוקף
   const { error: updateError } = await supabase
     .from('custom_users')
     .update({ reset_token: token, expires_at: expiresAt })
@@ -42,16 +46,22 @@ exports.handler = async (event) => {
 
   try {
     await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: 'noreply@sbiz-app.com',
       to: email,
       subject: 'איפוס סיסמה ל־SBIZ',
-      html: `<p>קיבלת בקשה לאיפוס סיסמה. כדי להמשיך, לחצי על הקישור הבא:</p>
-             <p><a href="${resetUrl}">איפוס סיסמה</a></p>
-             <p>הלינק בתוקף ל־15 דקות.</p>`
+      html: `
+        <p>קיבלת בקשה לאיפוס סיסמה.</p>
+        <p><a href="${resetUrl}">לחצי כאן לאיפוס סיסמה</a></p>
+        <p>קישור זה יהיה בתוקף ל־15 דקות בלבד.</p>
+      `
     });
   } catch (emailError) {
     return { statusCode: 500, body: 'Failed to send email' };
   }
 
-  return { statusCode: 200, body: JSON.stringify({ message: 'Reset email sent' }) };
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ message: 'Reset email sent' }),
+  };
 };
+
