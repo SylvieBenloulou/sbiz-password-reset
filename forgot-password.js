@@ -42,7 +42,7 @@ exports.handler = async (event) => {
 
   try {
     await resend.emails.send({
-      from: 'noreply@sbiz-app.com',
+      from: 'onboarding@resend.dev',
       to: email,
       subject: 'איפוס סיסמה ל־SBIZ',
       html: `<p>קיבלת בקשה לאיפוס סיסמה. כדי להמשיך, לחצי על הקישור הבא:</p>
