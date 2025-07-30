@@ -7,7 +7,7 @@
     "start": "netlify dev"
   },
   "dependencies": {
-    "resend": "^0.18.2"
+    "resend": "^0.14.0"
   },
   "devDependencies": {
     "netlify-cli": "^15.6.0"
