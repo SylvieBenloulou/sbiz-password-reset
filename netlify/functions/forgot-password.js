@@ -1,13 +1,30 @@
+const { createClient } = require('@supabase/supabase-js');
 const { Resend } = require('resend');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY
+);
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-exports.handler = async function (event, context) {
+exports.handler = async (event, context) => {
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  };
+
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' };
+  }
+
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      body: 'Method Not Allowed',
+      headers,
+      body: JSON.stringify({ error: 'Method not allowed' }),
     };
   }
 
@@ -17,37 +34,88 @@ exports.handler = async function (event, context) {
     if (!email) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: 'Missing email' }),
+        headers,
+        body: JSON.stringify({ error: 'Email is required' }),
       };
     }
 
-    const token = uuidv4();
-    const resetLink = `https://sbiz-osekpatour.netlify.app/custom-reset-password?token=${token}`;
+    const { data: user, error: userError } = await supabase
+      .from('user_subscriptions')
+      .select('email')
+      .eq('email', email)
+      .single();
 
-    const message = `
-      <p>שלום,</p>
-      <p>קיבלת את ההודעה הזו כי התבקשה איפוס סיסמה לאפליקציית SBIZ.</p>
-      <p><a href="${resetLink}">לחצי כאן לאיפוס סיסמה</a></p>
-      <p>אם לא את ביצעת את הבקשה, ניתן להתעלם מהמייל הזה.</p>
-    `;
+    // סודיות – גם אם המייל לא קיים, לא מחזירים שגיאה
+    if (userError || !user) {
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          message: 'If an account with that email exists, we sent a reset link.'
+        }),
+      };
+    }
 
-    const data = await resend.emails.send({
-      from: 'Sylvie SBIZ <onboarding@resend.dev>',
-      to: [email],
-      subject: 'איפוס סיסמה לאפליקציית SBIZ',
-      html: message,
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // שעה
+
+    const { error: tokenError } = await supabase
+      .from('password_reset_tokens')
+      .insert({
+        email: email,
+        token: resetToken,
+        expires_at: expiresAt.toISOString(),
+        used: false
+      });
+
+    if (tokenError) {
+      console.error('Token storage error:', tokenError);
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: 'Failed to process reset request' }),
+      };
+    }
+
+    const resetUrl = `${process.env.URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+
+    const { error: emailError } = await resend.emails.send({
+      from: 'SBIZ <sbiz@resend.dev>',
+      to: email,
+      subject: 'איפוס סיסמה - SBIZ',
+      html: `
+        <div style="font-family: Arial; direction: rtl; max-width: 600px; margin: 0 auto;">
+          <h2>בקשת איפוס סיסמה</h2>
+          <p>לחצי על הכפתור מטה כדי לאפס את הסיסמה שלך:</p>
+          <a href="${resetUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">איפוס סיסמה</a>
+          <p>הקישור תקף לשעה בלבד.</p>
+        </div>
+      `
     });
+
+    if (emailError) {
+      console.error('Email send error:', emailError);
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: 'Failed to send reset email' }),
+      };
+    }
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: 'Reset email sent', token }),
+      headers,
+      body: JSON.stringify({
+        message: 'If an account with that email exists, we sent a reset link.'
+      }),
     };
+
   } catch (error) {
-    console.error('Error sending reset email:', error);
+    console.error('Forgot password error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Internal Server Error' }),
+      headers,
+      body: JSON.stringify({ error: 'Internal server error' }),
     };
   }
 };
-
