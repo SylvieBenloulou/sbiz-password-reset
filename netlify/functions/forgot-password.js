@@ -45,7 +45,6 @@ exports.handler = async (event, context) => {
       .eq('email', email)
       .single();
 
-    // נמשיך גם אם המשתמש לא קיים – לצור אבטחה
     if (userError || !user) {
       return {
         statusCode: 200,
@@ -57,7 +56,7 @@ exports.handler = async (event, context) => {
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // שעה
 
     const { error: tokenError } = await supabase
       .from('password_reset_tokens')
@@ -77,12 +76,13 @@ exports.handler = async (event, context) => {
       };
     }
 
-   const resetUrl = `https://sbiz-osekpatour.netlify.app/reset-password?token=${resetToken}`;
-     console.log('👉 Attempting to send to:', email);
-console.log('👉 resetUrl:', resetUrl);
-  
+    const resetUrl = `https://sbiz-osekpatour.netlify.app/reset-password?token=${resetToken}`;
+    console.log('👉 Attempting to send to:', email);
+    console.log('👉 resetUrl:', resetUrl);
+    console.log('📧 FROM_EMAIL env:', process.env.FROM_EMAIL); // שורת הבדיקה
+
     const { error: emailError, data: emailResponse } = await resend.emails.send({
-    from: `SBIZ <${process.env.FROM_EMAIL}>`,
+      from: `SBIZ <${process.env.FROM_EMAIL}>`,
       to: email,
       subject: 'איפוס סיסמה - SBIZ',
       html: `
