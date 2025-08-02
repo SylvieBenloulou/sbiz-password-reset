@@ -82,7 +82,7 @@ exports.handler = async (event, context) => {
 console.log('👉 resetUrl:', resetUrl);
   
     const { error: emailError, data: emailResponse } = await resend.emails.send({
-      from: 'SBIZ <${process.env.FROM_EMAIL}>',
+    from: `SBIZ <${process.env.FROM_EMAIL}>`,
       to: email,
       subject: 'איפוס סיסמה - SBIZ',
       html: `
