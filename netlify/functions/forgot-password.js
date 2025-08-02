@@ -2,7 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 const { Resend } = require('resend');
 const crypto = require('crypto');
 
-const supabase = createClient( 
+const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
@@ -79,7 +79,10 @@ exports.handler = async (event, context) => {
 
     const resetUrl = `${process.env.URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
 
-    const { error: emailError } = await resend.emails.send({
+    console.log("📨 Sending email via Resend to:", email);
+    console.log("🔗 Reset URL:", resetUrl);
+
+    const { error: emailError, data: emailResponse } = await resend.emails.send({
       from: 'SBIZ <sbiz@resend.dev>',
       to: email,
       subject: 'איפוס סיסמה - SBIZ',
@@ -92,6 +95,9 @@ exports.handler = async (event, context) => {
         </div>
       `
     });
+
+    console.log("📬 Email Response:", emailResponse);
+    console.log("❗ Email Error:", emailError);
 
     if (emailError) {
       console.error('Email send error:', emailError);
@@ -119,3 +125,4 @@ exports.handler = async (event, context) => {
     };
   }
 };
+
