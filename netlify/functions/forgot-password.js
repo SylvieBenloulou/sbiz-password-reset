@@ -4,7 +4,7 @@ const crypto = require('crypto');
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_ANON_KEY
 );
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -45,7 +45,7 @@ exports.handler = async (event, context) => {
       .eq('email', email)
       .single();
 
-    // סודיות – גם אם המייל לא קיים, לא מחזירים שגיאה
+    // נמשיך גם אם המשתמש לא קיים – לצור אבטחה
     if (userError || !user) {
       return {
         statusCode: 200,
@@ -57,7 +57,7 @@ exports.handler = async (event, context) => {
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // שעה
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
     const { error: tokenError } = await supabase
       .from('password_reset_tokens')
@@ -69,7 +69,7 @@ exports.handler = async (event, context) => {
       });
 
     if (tokenError) {
-      console.error('Token storage error:', tokenError);
+      console.error('❗ Token storage error:', tokenError);
       return {
         statusCode: 500,
         headers,
@@ -78,9 +78,8 @@ exports.handler = async (event, context) => {
     }
 
     const resetUrl = `${process.env.URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
-
-    console.log("📨 Sending email via Resend to:", email);
-    console.log("🔗 Reset URL:", resetUrl);
+    console.log('📨 Sending email via Resend to:', email);
+    console.log('🔗 Reset URL:', resetUrl);
 
     const { error: emailError, data: emailResponse } = await resend.emails.send({
       from: 'SBIZ <sbiz@resend.dev>',
@@ -96,11 +95,10 @@ exports.handler = async (event, context) => {
       `
     });
 
-    console.log("📬 Email Response:", emailResponse);
-    console.log("❗ Email Error:", emailError);
+    console.log('📬 Email Response:', emailResponse);
 
     if (emailError) {
-      console.error('Email send error:', emailError);
+      console.error('❗ Email Error:', emailError);
       return {
         statusCode: 500,
         headers,
@@ -117,7 +115,7 @@ exports.handler = async (event, context) => {
     };
 
   } catch (error) {
-    console.error('Forgot password error:', error);
+    console.error('❗ Forgot password error:', error);
     return {
       statusCode: 500,
       headers,
@@ -125,4 +123,3 @@ exports.handler = async (event, context) => {
     };
   }
 };
-
