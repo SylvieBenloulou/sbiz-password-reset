@@ -82,7 +82,7 @@ exports.handler = async (event, context) => {
     console.log('📧 FROM_EMAIL env:', process.env.FROM_EMAIL); // שורת הבדיקה
 
     const { error: emailError, data: emailResponse } = await resend.emails.send({
-      from: `SBIZ <${process.env.FROM_EMAIL}>`,
+      from: 'onboarding@resend.dev',
       to: email,
       subject: 'איפוס סיסמה - SBIZ',
       html: `
