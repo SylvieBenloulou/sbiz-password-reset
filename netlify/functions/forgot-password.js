@@ -76,7 +76,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const resetUrl = `https://sbiz-osekpatour.netlify.app/reset-password?token=${resetToken}`;
+    const resetUrl = `${process.env.APP_BASE_URL}/reset-password?token=${resetToken}`;
     console.log('👉 Attempting to send to:', email);
     console.log('👉 resetUrl:', resetUrl);
     console.log('📧 FROM_EMAIL env:', process.env.FROM_EMAIL); // שורת הבדיקה
