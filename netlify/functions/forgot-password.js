@@ -78,9 +78,9 @@ exports.handler = async (event, context) => {
     }
 
    const resetUrl = `https://sbiz-osekpatour.netlify.app/reset-password?token=${resetToken}`;
-    console.log('📨 Sending email via Resend to:', email);
-    console.log('🔗 Reset URL:', resetUrl);
-
+     console.log('👉 Attempting to send to:', email);
+console.log('👉 resetUrl:', resetUrl);
+  
     const { error: emailError, data: emailResponse } = await resend.emails.send({
       from: 'SBIZ <${process.env.FROM_EMAIL}>',
       to: email,
