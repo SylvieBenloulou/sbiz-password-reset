@@ -77,7 +77,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const resetUrl = `${process.env.URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+   const resetUrl = `https://sbiz-osekpatour.netlify.app/reset-password?token=${resetToken}`;
     console.log('📨 Sending email via Resend to:', email);
     console.log('🔗 Reset URL:', resetUrl);
 
