@@ -80,6 +80,7 @@ exports.handler = async (event, context) => {
     console.log('👉 Attempting to send to:', email);
     console.log('👉 resetUrl:', resetUrl);
     console.log('📧 FROM_EMAIL env:', process.env.FROM_EMAIL); // שורת הבדיקה
+console.log('📧 Using API KEY:', process.env.RESEND_API_KEY ? '✅ Set' : '❌ Missing');
 
     const { error: emailError, data: emailResponse } = await resend.emails.send({
       from: 'onboarding@resend.dev',
